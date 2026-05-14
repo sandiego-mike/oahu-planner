@@ -2,7 +2,7 @@
 
 import { getSupabase } from "@/lib/supabase";
 import { sampleComments, sampleSuggestions } from "@/lib/trip-data";
-import type { SavedPlace, Suggestion, TripComment } from "@/lib/types";
+import type { Memory, SavedPlace, Suggestion, TripComment } from "@/lib/types";
 
 const suggestionKey = "oahu-family-suggestions";
 const commentKey = "oahu-family-comments";
@@ -154,6 +154,49 @@ function mapSavedPlaceRow(row: any): SavedPlace {
     addedBy: row.added_by,
     createdAt: row.created_at
   };
+}
+
+function mapMemoryRow(row: any): Memory {
+  return {
+    id: row.id,
+    dayId: row.day_id,
+    author: row.author,
+    photoUrl: row.photo_url,
+    caption: row.caption,
+    createdAt: row.created_at
+  };
+}
+
+export function subscribeMemories(callback: (memories: Memory[]) => void) {
+  const db = getSupabase();
+  if (!db) { callback([]); return () => undefined; }
+
+  const fetchAll = () =>
+    db.from("memories").select("*").order("created_at", { ascending: false })
+      .then(({ data }) => callback(data?.length ? data.map(mapMemoryRow) : []));
+
+  fetchAll();
+  const channel = db.channel("memories-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "memories" }, fetchAll)
+    .subscribe();
+  return () => { db.removeChannel(channel); };
+}
+
+export async function addMemory(memory: Omit<Memory, "id" | "createdAt">) {
+  const db = getSupabase();
+  if (!db) return;
+  await db.from("memories").insert({
+    day_id: memory.dayId,
+    author: memory.author,
+    photo_url: memory.photoUrl,
+    caption: memory.caption ?? null
+  });
+}
+
+export async function deleteMemory(id: string) {
+  const db = getSupabase();
+  if (!db) return;
+  await db.from("memories").delete().eq("id", id);
 }
 
 export function subscribeSavedPlaces(callback: (places: SavedPlace[]) => void) {

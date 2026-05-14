@@ -133,6 +133,15 @@ export type MadeInHawaiiLocation = {
   mapQuery: string;
 };
 
+export type Memory = {
+  id: string;
+  dayId: string;
+  author: string;
+  photoUrl: string;
+  caption: string | null;
+  createdAt: string;
+};
+
 export type SavedPlace = {
   id: string;
   foodCategory: string;

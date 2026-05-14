@@ -16,6 +16,7 @@ const navLinks = [
   { href: "/made-in-hawaii", label: "Made in HI" },
   { href: "/golf", label: "Golf" },
   { href: "/suggestions", label: "Suggestions" },
+  { href: "/memory", label: "📸 Memory" },
 ];
 
 export function Navbar() {
