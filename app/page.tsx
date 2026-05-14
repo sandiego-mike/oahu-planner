@@ -219,10 +219,26 @@ function SuggestionForm({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function SuggestionsBoard({ suggestions }: { suggestions: Suggestion[] }) {
+function SuggestionsBoard({ suggestions: incoming }: { suggestions: Suggestion[] }) {
+  const [local, setLocal] = useState<Suggestion[]>(incoming);
+  useEffect(() => { setLocal(incoming); }, [incoming]);
+
+  function handleVote(suggestion: Suggestion, emoji: string) {
+    setLocal((prev) =>
+      prev.map((s) =>
+        s.id === suggestion.id
+          ? { ...s, votes: { ...s.votes, [emoji]: (s.votes[emoji] ?? 0) + 1 } }
+          : s
+      )
+    );
+    voteSuggestion(suggestion, emoji).then(() =>
+      window.dispatchEvent(new Event("oahu-data-refresh"))
+    );
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {suggestions.map((suggestion) => (
+      {local.map((suggestion) => (
         <Card key={suggestion.id} className="p-5">
           <div className="flex items-start justify-between gap-3">
             <Badge>{suggestion.category}</Badge>
@@ -235,7 +251,7 @@ function SuggestionsBoard({ suggestions }: { suggestions: Suggestion[] }) {
           )}
           <div className="mt-4 flex flex-wrap gap-2">
             {reactions.map((emoji) => (
-              <button key={emoji} onClick={() => voteSuggestion(suggestion, emoji).then(() => window.dispatchEvent(new Event("oahu-data-refresh")))} className="rounded-full bg-sand px-3 py-1.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5">
+              <button key={emoji} onClick={() => handleVote(suggestion, emoji)} className="rounded-full bg-sand px-3 py-1.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 active:scale-95">
                 {emoji} {suggestion.votes[emoji] ?? 0}
               </button>
             ))}
@@ -881,10 +897,10 @@ function FarmersMarketsSection() {
           </div>
         </Card>
 
-        <div className="grid max-h-[640px] gap-3 overflow-auto pr-1 soft-scroll">
+        <div className="flex max-h-[640px] flex-col gap-3 overflow-auto pr-1 soft-scroll">
           {visibleMarkets.map((market) => (
-            <Card key={market.id} className={twMerge("cursor-pointer overflow-hidden p-4 transition hover:-translate-y-0.5", selected.id === market.id && "ring-2 ring-reef")} >
-              <button onClick={() => setSelectedId(market.id)} className="w-full text-left">
+            <Card key={market.id} className={twMerge("cursor-pointer p-4 transition hover:-translate-y-0.5", selected.id === market.id && "ring-2 ring-reef")} >
+              <button onClick={() => setSelectedId(market.id)} className="block w-full text-left">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-ink">{market.name}</h3>
@@ -1047,12 +1063,12 @@ function GolfSection() {
             <a href={selected.website} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-2xl bg-reef px-4 py-3 font-bold text-white">Book/check current rates</a>
           </div>
         </Card>
-        <div className="grid max-h-[760px] gap-3 overflow-auto pr-1 soft-scroll">
+        <div className="flex max-h-[760px] flex-col gap-3 overflow-auto pr-1 soft-scroll">
           {visible.map((course) => (
-            <Card key={course.id} className={twMerge("cursor-pointer overflow-hidden p-4 transition hover:-translate-y-0.5", selected.id === course.id && "ring-2 ring-reef")}>
-              <button onClick={() => setSelectedId(course.id)} className="w-full text-left">
-                <div className="grid gap-3 sm:grid-cols-[140px_1fr]">
-                  <img src={course.photo} alt="" className="h-36 w-full rounded-2xl object-cover" />
+            <Card key={course.id} className={twMerge("cursor-pointer p-4 transition hover:-translate-y-0.5", selected.id === course.id && "ring-2 ring-reef")}>
+              <button onClick={() => setSelectedId(course.id)} className="block w-full text-left">
+                <div className="flex gap-3">
+                  <img src={course.photo} alt="" className="h-24 w-24 shrink-0 rounded-2xl object-cover" />
                   <div>
                     <h3 className="font-bold text-ink">{course.name}</h3>
                     <p className="mt-1 text-sm text-ink/65">{course.driveFromKoOlina} from Ko Olina · {course.difficulty}</p>
