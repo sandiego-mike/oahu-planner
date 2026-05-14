@@ -354,10 +354,6 @@ function MemoryPhoto({ memory, challenge }: { memory: Memory; challenge: typeof 
   const [imgError, setImgError] = useState(false);
 
   async function handleDelete() {
-    if (nameInput.trim().toLowerCase() !== memory.author.trim().toLowerCase()) {
-      setNameInput("");
-      return;
-    }
     setDeleting(true);
     await deleteMemory(memory.id);
     window.dispatchEvent(new Event("oahu-data-refresh"));
@@ -391,33 +387,36 @@ function MemoryPhoto({ memory, challenge }: { memory: Memory; challenge: typeof 
           {!confirm ? (
             <button
               onClick={() => setConfirm(true)}
-              className="rounded-full p-1 text-ink/20 transition hover:bg-hibiscus/10 hover:text-hibiscus"
-              aria-label="Delete"
+              className="rounded-full p-1.5 text-ink/40 transition hover:bg-hibiscus/10 hover:text-hibiscus active:scale-90"
+              aria-label="Delete photo"
             >
-              <Trash2 size={13} />
+              <Trash2 size={15} />
             </button>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-col gap-1.5 items-end">
+              <p className="text-[10px] text-ink/50">Type your name to confirm:</p>
               <input
                 autoFocus
-                className="w-24 rounded-xl border border-reef/10 bg-white px-2 py-1 text-xs outline-none"
+                className="w-28 rounded-xl border border-reef/10 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-hibiscus/30"
                 placeholder={memory.author}
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
               />
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-xl bg-hibiscus px-2 py-1 text-[11px] font-bold text-white"
-              >
-                {deleting ? "…" : "Delete"}
-              </button>
-              <button
-                onClick={() => { setConfirm(false); setNameInput(""); }}
-                className="rounded-xl bg-sand px-2 py-1 text-[11px] font-bold text-ink"
-              >
-                Cancel
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => { setConfirm(false); setNameInput(""); }}
+                  className="rounded-xl bg-sand px-3 py-1.5 text-[11px] font-bold text-ink"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting || nameInput.trim().toLowerCase() !== memory.author.trim().toLowerCase()}
+                  className="rounded-xl bg-hibiscus px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-40"
+                >
+                  {deleting ? "…" : "Delete"}
+                </button>
+              </div>
             </div>
           )}
         </div>
