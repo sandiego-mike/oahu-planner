@@ -291,7 +291,11 @@ function AddPhotoModal({
           )}
 
           {uploadError && (
-            <p className="rounded-2xl bg-hibiscus/10 px-3 py-2 text-xs text-hibiscus">{uploadError}</p>
+            <div className="rounded-2xl bg-hibiscus/10 px-3 py-2.5 text-xs text-hibiscus space-y-1.5">
+              <p className="font-bold">Photo upload isn&apos;t set up yet.</p>
+              <p>To enable uploads, create a public <strong>memories</strong> bucket in your Supabase project → Storage → New bucket → name it <code className="bg-hibiscus/20 px-1 rounded">memories</code> → enable Public bucket. Then set a policy allowing anonymous uploads.</p>
+              <p className="text-hibiscus/70">Until then, you can paste a direct image URL (.jpg / .png) as a workaround.</p>
+            </div>
           )}
 
           {/* Your name */}
