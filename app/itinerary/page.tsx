@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowLeft,
   ChevronDown,
   Heart,
   Plus,
@@ -17,6 +18,8 @@ import {
   X
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { activityFilters, days } from "@/lib/trip-data";
 import { addSuggestion, voteSuggestion } from "@/lib/store";
 import { useData } from "@/components/DataProvider";
@@ -185,13 +188,18 @@ function DaySuggestionsList({ dayId, suggestions }: { dayId: string; suggestions
 
 export default function ItineraryPage() {
   const { comments, suggestions } = useData();
-  const [openDay, setOpenDay] = useState(days[0].id);
+  const searchParams = useSearchParams();
+  const dayParam = searchParams.get("day");
+  const singleDay = dayParam ? days.find((d) => d.id === dayParam) ?? null : null;
+
+  const [openDay, setOpenDay] = useState(singleDay ? singleDay.id : days[0].id);
   const [activeFilter, setActiveFilter] = useState("All");
   const [wednesdayMode, setWednesdayMode] = useState("Lagoon Challenge");
   const [suggestingForDay, setSuggestingForDay] = useState<string | null>(null);
 
-  const filteredDays =
-    activeFilter === "All" ? days : days.filter((day) => day.tags.includes(activeFilter));
+  const filteredDays = singleDay
+    ? [singleDay]
+    : activeFilter === "All" ? days : days.filter((day) => day.tags.includes(activeFilter));
 
   const wednesdayOptions = [
     {
@@ -214,11 +222,27 @@ export default function ItineraryPage() {
   return (
     <main className="min-h-screen">
       <section className="px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="Daily rhythm"
-          title="Interactive itinerary"
-          text="Early starts, shorter hikes, beach-flexible choices, and room for family voting."
-        />
+        {singleDay ? (
+          <div className="mx-auto max-w-6xl mb-8">
+            <Link
+              href="/itinerary"
+              className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-ink shadow-soft transition hover:-translate-y-0.5 hover:bg-white"
+            >
+              <ArrowLeft size={16} /> All days
+            </Link>
+            <h1 className="mt-5 font-display text-4xl font-semibold text-ink sm:text-5xl">
+              {singleDay.date}
+            </h1>
+            <p className="mt-2 text-lg font-bold text-reef">{singleDay.title}</p>
+          </div>
+        ) : (
+          <SectionHeading
+            eyebrow="Daily rhythm"
+            title="Interactive itinerary"
+            text="Early starts, shorter hikes, beach-flexible choices, and room for family voting."
+          />
+        )}
+        {!singleDay && (
         <div className="mx-auto mb-7 flex max-w-6xl gap-2 overflow-x-auto pb-2 soft-scroll">
           {["All", ...activityFilters].map((filter) => (
             <button
@@ -235,6 +259,7 @@ export default function ItineraryPage() {
             </button>
           ))}
         </div>
+        )}
         <div className="mx-auto grid max-w-6xl gap-5">
           {filteredDays.map((day) => {
             const isOpen = openDay === day.id;

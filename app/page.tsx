@@ -298,7 +298,7 @@ export default function Home() {
             {quickDays.map((day) => (
               <Link
                 key={day.id}
-                href="/itinerary"
+                href={`/itinerary?day=${day.id}`}
                 className="rounded-3xl bg-white/80 p-4 shadow-soft transition hover:-translate-y-1 hover:bg-white"
               >
                 <p className="font-bold text-reef">{day.label}</p>
