@@ -47,20 +47,77 @@ function Countdown() {
   );
 }
 
+const WX_CODE_LABEL: Record<number, string> = {
+  0: "Clear sky", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast",
+  45: "Foggy", 48: "Icy fog",
+  51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+  61: "Light rain", 63: "Rain", 65: "Heavy rain",
+  80: "Rain showers", 81: "Showers", 82: "Heavy showers",
+  95: "Thunderstorm", 96: "Thunderstorm + hail", 99: "Thunderstorm + hail"
+};
+
+function wxLabel(code: number): string {
+  return WX_CODE_LABEL[code] ?? "Partly cloudy";
+}
+
+function wxIsRainy(code: number): boolean {
+  return code >= 51 && code <= 99;
+}
+
 function WeatherWidget() {
+  const [wx, setWx] = useState<{ temp: number; feels: number; label: string; wind: number; code: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=21.334&longitude=-158.127" +
+      "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m" +
+      "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=Pacific%2FHonolulu"
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const c = data.current;
+        setWx({
+          temp: Math.round(c.temperature_2m),
+          feels: Math.round(c.apparent_temperature),
+          label: wxLabel(c.weather_code),
+          wind: Math.round(c.wind_speed_10m),
+          code: c.weather_code
+        });
+      })
+      .catch(() => { /* keep loading=true, shows fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <Card className="glass p-5">
       <div className="flex items-center gap-3">
         <div className="rounded-2xl bg-lagoon/15 p-3 text-reef">
           <CloudSun size={22} />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-ink/60">Ko Olina outlook</p>
-          <p className="text-2xl font-bold text-ink">Warm, breezy, 76-86°F</p>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-ink/60">Ko Olina — live weather</p>
+          {loading ? (
+            <p className="text-2xl font-bold text-ink/40">Loading…</p>
+          ) : wx ? (
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <p className="text-2xl font-bold text-ink">{wx.temp}°F</p>
+              <p className="text-sm text-ink/60">{wx.label}</p>
+            </div>
+          ) : (
+            <p className="text-2xl font-bold text-ink">Warm, 76–86°F</p>
+          )}
         </div>
       </div>
-      <p className="mt-3 text-sm leading-6 text-ink/65">
-        Pack water, hats, and reef-safe sunscreen. Check surf and rain each morning before beach or trail choices.
+      {wx && !loading && (
+        <div className="mt-3 flex gap-4 text-xs text-ink/55 font-medium">
+          <span>Feels like {wx.feels}°F</span>
+          <span>Wind {wx.wind} mph</span>
+          {wxIsRainy(wx.code) && <span className="text-hibiscus font-bold">☔ Rain possible</span>}
+        </div>
+      )}
+      <p className="mt-2 text-xs leading-5 text-ink/50">
+        Pack water, hats & reef-safe sunscreen. Check surf and rain each morning.
       </p>
     </Card>
   );
