@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -187,6 +187,14 @@ function DaySuggestionsList({ dayId, suggestions }: { dayId: string; suggestions
 }
 
 export default function ItineraryPage() {
+  return (
+    <Suspense>
+      <ItineraryContent />
+    </Suspense>
+  );
+}
+
+function ItineraryContent() {
   const { comments, suggestions } = useData();
   const searchParams = useSearchParams();
   const dayParam = searchParams.get("day");
