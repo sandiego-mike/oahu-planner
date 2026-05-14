@@ -199,6 +199,37 @@ export async function deleteMemory(id: string) {
   await db.from("memories").delete().eq("id", id);
 }
 
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX = 1920;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.85);
+    };
+    img.src = objectUrl;
+  });
+}
+
+export async function uploadMemoryPhoto(file: File): Promise<string | null> {
+  const db = getSupabase();
+  if (!db) return null;
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+  const compressed = await compressImage(file);
+  const { error } = await db.storage.from("memories").upload(fileName, compressed, {
+    contentType: "image/jpeg"
+  });
+  if (error) { console.error("Upload error:", error); return null; }
+  return db.storage.from("memories").getPublicUrl(fileName).data.publicUrl;
+}
+
 export function subscribeSavedPlaces(callback: (places: SavedPlace[]) => void) {
   const db = getSupabase();
   if (!db) {
@@ -223,10 +254,10 @@ export function subscribeSavedPlaces(callback: (places: SavedPlace[]) => void) {
   return () => { db.removeChannel(channel); };
 }
 
-export async function savePlace(place: Omit<SavedPlace, "id" | "createdAt">) {
+export async function savePlace(place: Omit<SavedPlace, "id" | "createdAt">): Promise<string | null> {
   const db = getSupabase();
-  if (!db) return;
-  await db.from("saved_places").insert({
+  if (!db) return "No database connection";
+  const { error } = await db.from("saved_places").insert({
     food_category: place.foodCategory,
     name: place.name,
     address: place.address ?? null,
@@ -238,6 +269,8 @@ export async function savePlace(place: Omit<SavedPlace, "id" | "createdAt">) {
     user_note: place.userNote ?? null,
     added_by: place.addedBy
   });
+  if (error) { console.error("savePlace:", error); return error.message; }
+  return null;
 }
 
 export async function deletePlace(id: string) {

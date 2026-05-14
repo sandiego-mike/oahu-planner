@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   Camera,
   ChevronDown,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { motion } from "framer-motion";
-import { addMemory, deleteMemory } from "@/lib/store";
+import { addMemory, deleteMemory, uploadMemoryPhoto } from "@/lib/store";
 import { useData } from "@/components/DataProvider";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -114,16 +114,57 @@ function AddPhotoModal({
 }) {
   const [dayId, setDayId] = useState(defaultDayId);
   const [author, setAuthor] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [saving, setSaving] = useState(false);
-  const [imgError, setImgError] = useState(false);
+
+  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [pastedUrl, setPastedUrl] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => { if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setUploadError("");
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function clearFile() {
+    setSelectedFile(null);
+    if (previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  const photoReady = uploadMode === "file" ? !!selectedFile : !!pastedUrl.trim();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!author.trim() || !photoUrl.trim()) return;
+    if (!author.trim() || !photoReady) return;
     setSaving(true);
-    await addMemory({ dayId, author: author.trim(), photoUrl: photoUrl.trim(), caption: caption.trim() || null });
+    setUploadError("");
+
+    let finalUrl = "";
+    if (uploadMode === "file" && selectedFile) {
+      const url = await uploadMemoryPhoto(selectedFile);
+      if (!url) {
+        setUploadError("Upload failed — the storage bucket may not be set up yet. See setup instructions below, or paste a URL instead.");
+        setSaving(false);
+        return;
+      }
+      finalUrl = url;
+    } else {
+      finalUrl = pastedUrl.trim();
+    }
+
+    await addMemory({ dayId, author: author.trim(), photoUrl: finalUrl, caption: caption.trim() || null });
     setSaving(false);
     window.dispatchEvent(new Event("oahu-data-refresh"));
     onClose();
@@ -144,7 +185,7 @@ function AddPhotoModal({
           </button>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto p-5 grid gap-4">
+        <form onSubmit={handleSubmit} className="max-h-[80vh] overflow-y-auto p-5 grid gap-4">
           {/* Day selector */}
           <div>
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-ink/50">
@@ -168,34 +209,90 @@ function AddPhotoModal({
             )}
           </div>
 
-          {/* Photo URL */}
-          <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-ink/50">
-              Photo URL
-            </label>
-            <input
-              className="w-full rounded-2xl border border-reef/10 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
-              placeholder="Paste a direct image link (.jpg, .png, etc.)"
-              value={photoUrl}
-              onChange={(e) => { setPhotoUrl(e.target.value); setImgError(false); }}
-            />
-            <p className="mt-1.5 text-[11px] text-ink/40">
-              Tip: Upload to <strong>imgur.com</strong> or use a shared Google Drive / Dropbox direct link
-            </p>
-            {photoUrl && !imgError && (
-              <img
-                src={photoUrl}
-                alt="Preview"
-                className="mt-2 h-32 w-full rounded-2xl object-cover"
-                onError={() => setImgError(true)}
+          {/* Upload area */}
+          {uploadMode === "file" ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-ink/50">
+                Photo
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleFileChange}
               />
-            )}
-            {imgError && (
-              <p className="mt-2 rounded-2xl bg-hibiscus/10 px-3 py-2 text-xs text-hibiscus">
-                Can&apos;t preview this URL — make sure it&apos;s a direct image link.
-              </p>
-            )}
-          </div>
+              {previewUrl ? (
+                <div>
+                  <div className="relative">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="h-44 w-full rounded-2xl object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearFile}
+                      className="absolute right-2 top-2 rounded-full bg-ink/60 p-1.5 text-white backdrop-blur-sm"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-2 text-xs font-bold text-reef underline"
+                  >
+                    Change photo
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-reef/30 py-10 text-center transition hover:border-reef hover:bg-reef/5 active:scale-[0.98]"
+                >
+                  <div className="rounded-2xl bg-reef/10 p-4 text-reef">
+                    <Camera size={28} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-ink">Tap to add a photo</p>
+                    <p className="mt-0.5 text-xs text-ink/45">Camera or photo library</p>
+                  </div>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setUploadMode("url")}
+                className="mt-2 text-[11px] text-ink/40 underline"
+              >
+                Or paste a URL instead
+              </button>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.15em] text-ink/50">
+                Photo URL
+              </label>
+              <input
+                className="w-full rounded-2xl border border-reef/10 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
+                placeholder="Paste a direct image link (.jpg, .png, etc.)"
+                value={pastedUrl}
+                onChange={(e) => setPastedUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setUploadMode("file")}
+                className="mt-2 text-[11px] text-ink/40 underline"
+              >
+                ← Back to file upload
+              </button>
+            </div>
+          )}
+
+          {uploadError && (
+            <p className="rounded-2xl bg-hibiscus/10 px-3 py-2 text-xs text-hibiscus">{uploadError}</p>
+          )}
 
           {/* Your name */}
           <input
@@ -209,7 +306,7 @@ function AddPhotoModal({
           {/* Caption */}
           <textarea
             className="min-h-16 rounded-2xl border border-reef/10 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
-            placeholder="Caption or caption — optional"
+            placeholder="Caption — optional"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
           />
@@ -223,15 +320,24 @@ function AddPhotoModal({
               Cancel
             </button>
             <button
-              onClick={handleSubmit}
-              disabled={!author.trim() || !photoUrl.trim() || saving}
+              type="submit"
+              disabled={!author.trim() || !photoReady || saving}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-reef px-4 py-3 text-sm font-bold text-white disabled:opacity-50 transition hover:-translate-y-0.5"
             >
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-              Add to Memory Wall
+              {saving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {uploadMode === "file" ? "Uploading…" : "Saving…"}
+                </>
+              ) : (
+                <>
+                  <Camera size={16} />
+                  Add to Memory Wall
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

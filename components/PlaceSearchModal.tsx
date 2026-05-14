@@ -69,12 +69,14 @@ function AddForm({
   const [photoUrl, setPhotoUrl] = useState("");
   const [userNote, setUserNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!addedBy.trim()) return;
     setSaving(true);
-    await savePlace({
+    setSaveError("");
+    const err = await savePlace({
       foodCategory: categoryId,
       name: prefill.name ?? "",
       address: prefill.address ?? null,
@@ -87,6 +89,7 @@ function AddForm({
       addedBy: addedBy.trim()
     });
     setSaving(false);
+    if (err) { setSaveError(err); return; }
     onAdded();
     onClose();
   }
@@ -160,6 +163,12 @@ function AddForm({
         onChange={(e) => setPhotoUrl(e.target.value)}
       />
 
+      {saveError && (
+        <p className="rounded-2xl bg-hibiscus/10 px-3 py-2 text-xs text-hibiscus">
+          Save failed: {saveError}. Make sure the saved_places table exists in Supabase.
+        </p>
+      )}
+
       <div className="flex gap-2">
         <button
           type="button"
@@ -200,13 +209,15 @@ function ManualEntryForm({
   const [photoUrl, setPhotoUrl] = useState("");
   const [userNote, setUserNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim() || !addedBy.trim()) return;
     setSaving(true);
+    setSaveError("");
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + address + " Oahu Hawaii")}`;
-    await savePlace({
+    const err = await savePlace({
       foodCategory: categoryId,
       name: name.trim(),
       address: address.trim() || null,
@@ -219,6 +230,7 @@ function ManualEntryForm({
       addedBy: addedBy.trim()
     });
     setSaving(false);
+    if (err) { setSaveError(err); return; }
     onAdded();
     onClose();
   }
@@ -267,6 +279,12 @@ function ManualEntryForm({
         value={photoUrl}
         onChange={(e) => setPhotoUrl(e.target.value)}
       />
+      {saveError && (
+        <p className="rounded-2xl bg-hibiscus/10 px-3 py-2 text-xs text-hibiscus">
+          Save failed: {saveError}. Make sure the saved_places table exists in Supabase.
+        </p>
+      )}
+
       <div className="flex gap-2">
         <button type="button" onClick={onClose} className="rounded-2xl bg-sand px-4 py-2.5 text-sm font-bold text-ink">
           Cancel

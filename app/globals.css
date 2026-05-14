@@ -36,15 +36,30 @@ body {
   color: #f8fbf8 !important;
 }
 
+/* Mid-opacity ink text */
 .dark .text-ink\/70,
 .dark .text-ink\/75,
 .dark .text-ink\/65,
 .dark .text-ink\/60,
 .dark .text-ink\/55,
+.dark .text-ink\/50,
 .dark .text-ink\/45 {
   color: rgba(248, 251, 248, 0.68) !important;
 }
 
+/* Low-opacity ink text — these become invisible on dark bg without override */
+.dark .text-ink\/40,
+.dark .text-ink\/35 {
+  color: rgba(248, 251, 248, 0.52) !important;
+}
+
+.dark .text-ink\/30,
+.dark .text-ink\/20,
+.dark .text-ink\/15 {
+  color: rgba(248, 251, 248, 0.38) !important;
+}
+
+/* White backgrounds */
 .dark .bg-white,
 .dark .bg-white\/80,
 .dark .bg-white\/85,
@@ -53,9 +68,52 @@ body {
   background-color: rgba(15, 37, 46, 0.86) !important;
 }
 
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: rgba(15, 37, 46, 0.95) !important;
+}
+
+/* Sand backgrounds */
 .dark .bg-sand,
 .dark .bg-sand\/70 {
   background-color: rgba(247, 239, 226, 0.12) !important;
+}
+
+.dark .bg-sand\/50,
+.dark .bg-sand\/60 {
+  background-color: rgba(247, 239, 226, 0.08) !important;
+}
+
+/* lagoon/8 is nearly invisible on dark bg — bump it up */
+.dark .bg-lagoon\/8 {
+  background-color: rgba(42, 167, 165, 0.2) !important;
+}
+
+/* Borders — reef/10 is invisible on dark, make it visible */
+.dark .border-reef\/10 {
+  border-color: rgba(4, 124, 138, 0.35) !important;
+}
+
+/* Ring on cards and focused elements */
+.dark .ring-white\/70 {
+  --tw-ring-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Input/textarea/select — ensure readable text and placeholders */
+.dark input,
+.dark textarea,
+.dark select {
+  color: rgba(248, 251, 248, 0.9) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(248, 251, 248, 0.32) !important;
+}
+
+/* Category/section cards on food/itinerary pages */
+.dark .ring-2.ring-reef\/30 {
+  --tw-ring-color: rgba(4, 124, 138, 0.5) !important;
 }
 
 button,
