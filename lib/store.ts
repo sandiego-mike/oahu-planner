@@ -56,7 +56,8 @@ export function subscribeSuggestions(callback: (suggestions: Suggestion[]) => vo
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        callback(data?.length ? data.map(mapSuggestionRow) : sampleSuggestions);
+        if (typeof window !== "undefined") window.localStorage.removeItem(suggestionKey);
+        callback(data?.length ? data.map(mapSuggestionRow) : []);
       });
 
   fetchAll();
@@ -82,7 +83,8 @@ export function subscribeComments(callback: (comments: TripComment[]) => void) {
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        callback(data?.length ? data.map(mapCommentRow) : sampleComments);
+        if (typeof window !== "undefined") window.localStorage.removeItem(commentKey);
+        callback(data?.length ? data.map(mapCommentRow) : []);
       });
 
   fetchAll();
