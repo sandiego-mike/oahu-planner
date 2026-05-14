@@ -133,6 +133,21 @@ export type MadeInHawaiiLocation = {
   mapQuery: string;
 };
 
+export type SavedPlace = {
+  id: string;
+  foodCategory: string;
+  name: string;
+  address: string | null;
+  rating: number | null;
+  reviewCount: number | null;
+  photoRef: string | null;
+  mapsUrl: string | null;
+  website: string | null;
+  userNote: string | null;
+  addedBy: string;
+  createdAt: string;
+};
+
 export type GolfCourse = {
   id: string;
   name: string;

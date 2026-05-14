@@ -2,7 +2,7 @@
 
 import { getSupabase } from "@/lib/supabase";
 import { sampleComments, sampleSuggestions } from "@/lib/trip-data";
-import type { Suggestion, TripComment } from "@/lib/types";
+import type { SavedPlace, Suggestion, TripComment } from "@/lib/types";
 
 const suggestionKey = "oahu-family-suggestions";
 const commentKey = "oahu-family-comments";
@@ -137,6 +137,76 @@ export async function addComment(comment: Omit<TripComment, "id" | "createdAt">)
     { ...comment, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
     ...current
   ]);
+}
+
+function mapSavedPlaceRow(row: any): SavedPlace {
+  return {
+    id: row.id,
+    foodCategory: row.food_category,
+    name: row.name,
+    address: row.address,
+    rating: row.rating,
+    reviewCount: row.review_count,
+    photoRef: row.photo_ref,
+    mapsUrl: row.maps_url,
+    website: row.website,
+    userNote: row.user_note,
+    addedBy: row.added_by,
+    createdAt: row.created_at
+  };
+}
+
+export function subscribeSavedPlaces(callback: (places: SavedPlace[]) => void) {
+  const db = getSupabase();
+  if (!db) {
+    callback([]);
+    return () => undefined;
+  }
+
+  const fetchAll = () =>
+    db
+      .from("saved_places")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => callback(data?.length ? data.map(mapSavedPlaceRow) : []));
+
+  fetchAll();
+
+  const channel = db
+    .channel("saved-places-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "saved_places" }, fetchAll)
+    .subscribe();
+
+  return () => { db.removeChannel(channel); };
+}
+
+export async function savePlace(place: Omit<SavedPlace, "id" | "createdAt">) {
+  const db = getSupabase();
+  if (!db) return;
+  await db.from("saved_places").insert({
+    food_category: place.foodCategory,
+    name: place.name,
+    address: place.address ?? null,
+    rating: place.rating ?? null,
+    review_count: place.reviewCount ?? null,
+    photo_ref: place.photoRef ?? null,
+    maps_url: place.mapsUrl ?? null,
+    website: place.website ?? null,
+    user_note: place.userNote ?? null,
+    added_by: place.addedBy
+  });
+}
+
+export async function deletePlace(id: string) {
+  const db = getSupabase();
+  if (!db) return;
+  await db.from("saved_places").delete().eq("id", id);
+}
+
+export async function updatePlaceNote(id: string, note: string) {
+  const db = getSupabase();
+  if (!db) return;
+  await db.from("saved_places").update({ user_note: note }).eq("id", id);
 }
 
 export async function deleteComment(id: string) {

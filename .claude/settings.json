@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"/Users/michaeldevries/Documents/Oahu planner\" rev-parse --show-toplevel)",
+      "Bash(gh auth *)",
+      "Bash(brew list *)",
+      "Bash(npm list *)",
+      "Bash(npx vercel *)",
+      "Bash(brew install *)",
+      "Bash(npm install *)",
+      "Bash(curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  }
+}
