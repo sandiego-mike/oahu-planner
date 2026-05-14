@@ -1506,35 +1506,7 @@ export const sampleComments: TripComment[] = [
   }
 ];
 
-export const sampleSuggestions: Suggestion[] = [
-  {
-    id: "s1",
-    author: "Nana",
-    title: "Book one sunset dinner near Ko Olina",
-    category: "food",
-    notes: "Nice way to avoid a long drive after a full day.",
-    votes: { "❤️": 5, "👍": 2 },
-    createdAt: new Date("2026-05-04T09:00:00").toISOString()
-  },
-  {
-    id: "s2",
-    author: "Jake",
-    title: "Add a snorkeling conditions check before Shark's Cove",
-    category: "beach",
-    notes: "Only go in if the water is calm. Otherwise it can be a look-around stop.",
-    votes: { "👍": 4, "🌊": 3 },
-    createdAt: new Date("2026-05-04T11:00:00").toISOString()
-  },
-  {
-    id: "s3",
-    author: "Mom",
-    title: "Memory wall prompt: favorite bite of the day",
-    category: "memory",
-    notes: "Everyone adds one photo or caption each night.",
-    votes: { "📸": 6 },
-    createdAt: new Date("2026-05-05T14:00:00").toISOString()
-  }
-];
+export const sampleSuggestions: Suggestion[] = [];
 
 export const packingItems = [
   "Reef shoes",
