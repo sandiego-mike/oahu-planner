@@ -53,6 +53,8 @@ function MemoryWall() {
 
 export default function SuggestionsPage() {
   const { suggestions } = useData();
+  // Exclude day-specific suggestions (those live inside the itinerary page)
+  const generalSuggestions = suggestions.filter((s) => !s.link?.startsWith("__day:"));
 
   return (
     <main className="min-h-screen">
@@ -72,7 +74,7 @@ export default function SuggestionsPage() {
             </div>
             <SuggestionForm />
           </Card>
-          <SuggestionsBoard suggestions={suggestions} />
+          <SuggestionsBoard suggestions={generalSuggestions} />
         </div>
       </section>
 

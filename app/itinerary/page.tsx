@@ -1,22 +1,194 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, Heart, Plus, Star, Sun, TentTree, ThumbsUp, Waves } from "lucide-react";
+import {
+  ChevronDown,
+  Heart,
+  Plus,
+  Send,
+  Sparkles,
+  Star,
+  Sun,
+  TentTree,
+  ThumbsDown,
+  ThumbsUp,
+  Waves,
+  X
+} from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { activityFilters, days } from "@/lib/trip-data";
+import { addSuggestion, voteSuggestion } from "@/lib/store";
 import { useData } from "@/components/DataProvider";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CommentBox } from "@/components/CommentBox";
-import Link from "next/link";
+import type { Category, Suggestion } from "@/lib/types";
+
+const suggestionCategories: { label: string; value: Category | "general" }[] = [
+  { label: "General", value: "general" },
+  { label: "Restaurant", value: "food" },
+  { label: "Beach", value: "beach" },
+  { label: "Trail", value: "trail" },
+  { label: "Shaved ice", value: "shaved-ice" },
+  { label: "Brewery", value: "brewery" },
+];
+
+const reactions = ["👍", "❤️", "🌊", "🍧", "📸"];
+
+/** Suggestions tagged to a specific day use link = "__day:{dayId}" */
+function isDaySuggestion(s: Suggestion, dayId: string) {
+  return s.link === `__day:${dayId}`;
+}
+
+function DaySuggestionForm({ dayId, onClose }: { dayId: string; onClose: () => void }) {
+  const [author, setAuthor] = useState("");
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<Category | "general">("general");
+  const [notes, setNotes] = useState("");
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!author.trim() || !title.trim()) return;
+    await addSuggestion({
+      author,
+      title,
+      category,
+      notes,
+      link: `__day:${dayId}`,
+      imageUrl: ""
+    });
+    window.dispatchEvent(new Event("oahu-data-refresh"));
+    onClose();
+  }
+
+  return (
+    <div className="mt-4 rounded-3xl border border-reef/20 bg-white/70 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-bold text-reef">
+          <Sparkles size={15} /> Suggest an alternative for this day
+        </div>
+        <button onClick={onClose} className="rounded-full p-1 text-ink/40 hover:text-ink">
+          <X size={16} />
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="grid gap-2 sm:grid-cols-2">
+        <input
+          className="rounded-2xl border border-reef/10 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
+          placeholder="Your name"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+        />
+        <input
+          className="rounded-2xl border border-reef/10 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
+          placeholder="Idea title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <select
+          className="rounded-2xl border border-reef/10 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lagoon/40"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as Category | "general")}
+        >
+          {suggestionCategories.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-reef px-4 py-2.5 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-ink"
+        >
+          <Send size={15} /> Submit
+        </button>
+        <textarea
+          className="min-h-20 rounded-2xl border border-reef/10 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lagoon/40 sm:col-span-2"
+          placeholder="Notes, why it sounds fun, parking tips..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </form>
+    </div>
+  );
+}
+
+function DaySuggestionsList({ dayId, suggestions }: { dayId: string; suggestions: Suggestion[] }) {
+  const daySuggestions = suggestions.filter((s) => isDaySuggestion(s, dayId));
+  const [open, setOpen] = useState(false);
+  const [localSuggestions, setLocalSuggestions] = useState(daySuggestions);
+
+  // Sync when incoming changes (e.g. after refresh)
+  if (JSON.stringify(localSuggestions.map((s) => s.id)) !== JSON.stringify(daySuggestions.map((s) => s.id))) {
+    setLocalSuggestions(daySuggestions);
+  }
+
+  if (daySuggestions.length === 0) return null;
+
+  function handleVote(suggestion: Suggestion, emoji: string) {
+    setLocalSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === suggestion.id
+          ? { ...s, votes: { ...s.votes, [emoji]: (s.votes[emoji] ?? 0) + 1 } }
+          : s
+      )
+    );
+    voteSuggestion(suggestion, emoji).then(() =>
+      window.dispatchEvent(new Event("oahu-data-refresh"))
+    );
+  }
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-sm font-bold text-reef"
+      >
+        <ChevronDown size={16} className={twMerge("transition", open && "rotate-180")} />
+        {daySuggestions.length} family suggestion{daySuggestions.length !== 1 ? "s" : ""} for this day
+      </button>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          className="mt-3 grid gap-3"
+        >
+          {localSuggestions.map((s) => (
+            <div key={s.id} className="rounded-2xl bg-white/80 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge>{s.category}</Badge>
+                    <span className="text-xs text-ink/45">{s.author}</span>
+                  </div>
+                  <p className="mt-2 font-bold text-ink">{s.title}</p>
+                  {s.notes && <p className="mt-1 text-sm leading-5 text-ink/65">{s.notes}</p>}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {reactions.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleVote(s, emoji)}
+                    className="rounded-full bg-sand px-3 py-1.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 active:scale-95"
+                  >
+                    {emoji} {s.votes[emoji] ?? 0}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  );
+}
 
 export default function ItineraryPage() {
-  const { comments } = useData();
+  const { comments, suggestions } = useData();
   const [openDay, setOpenDay] = useState(days[0].id);
   const [activeFilter, setActiveFilter] = useState("All");
   const [wednesdayMode, setWednesdayMode] = useState("Lagoon Challenge");
+  const [suggestingForDay, setSuggestingForDay] = useState<string | null>(null);
 
   const filteredDays =
     activeFilter === "All" ? days : days.filter((day) => day.tags.includes(activeFilter));
@@ -66,6 +238,7 @@ export default function ItineraryPage() {
         <div className="mx-auto grid max-w-6xl gap-5">
           {filteredDays.map((day) => {
             const isOpen = openDay === day.id;
+            const isSuggesting = suggestingForDay === day.id;
             return (
               <Card key={day.id} className="overflow-hidden">
                 <button
@@ -177,20 +350,37 @@ export default function ItineraryPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Vote + Suggest alternative */}
                     <div className="mt-5 flex flex-wrap gap-2">
                       <button className="inline-flex items-center gap-2 rounded-full bg-palm/10 px-4 py-2 text-sm font-bold text-palm">
                         <ThumbsUp size={16} /> Vote up
                       </button>
                       <button className="inline-flex items-center gap-2 rounded-full bg-hibiscus/10 px-4 py-2 text-sm font-bold text-hibiscus">
-                        Thumbs down
+                        <ThumbsDown size={16} /> Vote down
                       </button>
-                      <Link
-                        href="/suggestions"
-                        className="inline-flex items-center gap-2 rounded-full bg-reef px-4 py-2 text-sm font-bold text-white"
-                      >
-                        <Plus size={16} /> Suggest alternative
-                      </Link>
+                      {!isSuggesting && (
+                        <button
+                          onClick={() => setSuggestingForDay(day.id)}
+                          className="inline-flex items-center gap-2 rounded-full bg-reef px-4 py-2 text-sm font-bold text-white"
+                        >
+                          <Plus size={16} /> Suggest alternative
+                        </button>
+                      )}
                     </div>
+
+                    {/* Inline suggestion form for this day */}
+                    {isSuggesting && (
+                      <DaySuggestionForm
+                        dayId={day.id}
+                        onClose={() => setSuggestingForDay(null)}
+                      />
+                    )}
+
+                    {/* Suggestions submitted for this day */}
+                    <DaySuggestionsList dayId={day.id} suggestions={suggestions} />
+
+                    {/* Comments */}
                     <CommentBox itemId={day.id} comments={comments} />
                   </motion.div>
                 )}

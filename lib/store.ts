@@ -139,6 +139,17 @@ export async function addComment(comment: Omit<TripComment, "id" | "createdAt">)
   ]);
 }
 
+export async function deleteComment(id: string) {
+  const db = getSupabase();
+  if (db) {
+    await db.from("comments").delete().eq("id", id);
+    return;
+  }
+
+  const current = readLocal(commentKey, sampleComments);
+  writeLocal(commentKey, current.filter((c) => c.id !== id));
+}
+
 export async function voteSuggestion(suggestion: Suggestion, emoji: string) {
   const votes = { ...suggestion.votes, [emoji]: (suggestion.votes[emoji] ?? 0) + 1 };
   const db = getSupabase();
