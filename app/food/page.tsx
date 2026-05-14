@@ -52,10 +52,10 @@ function StarRow({ rating }: { rating: number }) {
         <Star
           key={s}
           size={12}
-          className={s <= Math.round(rating) ? "text-sunrise fill-sunrise" : "text-ink/15"}
+          className={s <= rating ? "fill-sunrise text-sunrise" : "text-ink/15"}
         />
       ))}
-      <span className="ml-1 text-xs font-bold text-ink">{rating.toFixed(1)}</span>
+      <span className="ml-1 text-xs font-bold text-ink">{rating}/5</span>
     </span>
   );
 }
@@ -83,24 +83,20 @@ function PlaceCard({ place }: { place: SavedPlace }) {
 
   return (
     <Card className="overflow-hidden">
-      {place.photoRef && (
-        <img
-          src={`/api/places/photo?ref=${place.photoRef}`}
-          alt=""
-          className="h-36 w-full object-cover"
-        />
+      {place.photoUrl && (
+        <img src={place.photoUrl} alt="" className="h-36 w-full object-cover" />
       )}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h4 className="font-bold text-ink leading-tight">{place.name}</h4>
-            {place.rating && (
-              <div className="mt-1">
-                <StarRow rating={place.rating} />
-                {place.reviewCount && (
-                  <span className="text-xs text-ink/40"> ({place.reviewCount.toLocaleString()} reviews)</span>
-                )}
-              </div>
+            {place.placeType && (
+              <span className="mt-0.5 inline-block rounded-full bg-lagoon/10 px-2 py-0.5 text-[11px] font-bold capitalize text-reef">
+                {place.placeType.replace("_", " ")}
+              </span>
+            )}
+            {place.familyRating && (
+              <div className="mt-1"><StarRow rating={place.familyRating} /></div>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">

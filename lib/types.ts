@@ -138,11 +138,11 @@ export type SavedPlace = {
   foodCategory: string;
   name: string;
   address: string | null;
-  rating: number | null;
-  reviewCount: number | null;
-  photoRef: string | null;
+  familyRating: number | null;
+  photoUrl: string | null;
   mapsUrl: string | null;
   website: string | null;
+  placeType: string | null;
   userNote: string | null;
   addedBy: string;
   createdAt: string;
