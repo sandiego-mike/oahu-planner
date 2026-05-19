@@ -3,18 +3,27 @@
 import { FormEvent, Suspense, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowLeft,
+  Camera,
   ChevronDown,
+  Cloud,
   Heart,
+  Mountain,
+  ParkingCircle,
   Plus,
   Send,
+  ShoppingBag,
   Sparkles,
   Star,
   Sun,
+  Sunrise,
   TentTree,
   ThumbsDown,
   ThumbsUp,
+  Users,
   Waves,
+  Wind,
   X
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
@@ -27,7 +36,28 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { CommentBox } from "@/components/CommentBox";
-import type { Category, Suggestion } from "@/lib/types";
+import type { ActivityIcon, Category, Suggestion } from "@/lib/types";
+
+const activityIconConfig: Record<ActivityIcon, { icon: React.ElementType; label: string; bg: string; text: string }> = {
+  hike:             { icon: TentTree,      label: "Hike",            bg: "bg-palm/10",     text: "text-palm" },
+  beach:            { icon: Waves,         label: "Beach",           bg: "bg-lagoon/15",   text: "text-lagoon" },
+  market:           { icon: ShoppingBag,   label: "Market",          bg: "bg-hibiscus/10", text: "text-hibiscus" },
+  scenic:           { icon: Camera,        label: "Scenic",          bg: "bg-reef/10",     text: "text-reef" },
+  sunrise:          { icon: Sunrise,       label: "Early Start",     bg: "bg-sunrise/20",  text: "text-hibiscus" },
+  "parking-caution":{ icon: AlertTriangle, label: "Parking Caution", bg: "bg-red-50",      text: "text-red-500" },
+};
+
+const crowdColors: Record<string, string> = {
+  Low:    "bg-palm/10 text-palm",
+  Medium: "bg-sunrise/20 text-hibiscus",
+  High:   "bg-red-50 text-red-500",
+};
+
+const parkingColors: Record<string, string> = {
+  Easy:     "bg-palm/10 text-palm",
+  Moderate: "bg-sunrise/20 text-hibiscus",
+  Hard:     "bg-red-50 text-red-500",
+};
 
 const suggestionCategories: { label: string; value: Category | "general" }[] = [
   { label: "General", value: "general" },
@@ -299,7 +329,36 @@ function ItineraryContent() {
                       {!day.noPermit && (
                         <Badge className="bg-hibiscus/10 text-hibiscus">Permit review needed</Badge>
                       )}
+                      {day.crowdLevel && (
+                        <Badge className={crowdColors[day.crowdLevel]}>
+                          <Users size={11} className="mr-1 inline" />
+                          Crowds: {day.crowdLevel}
+                        </Badge>
+                      )}
+                      {day.parkingDifficulty && (
+                        <Badge className={parkingColors[day.parkingDifficulty]}>
+                          <ParkingCircle size={11} className="mr-1 inline" />
+                          Parking: {day.parkingDifficulty}
+                        </Badge>
+                      )}
                     </div>
+                    {day.activityIcons && day.activityIcons.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {day.activityIcons.map((icon) => {
+                          const cfg = activityIconConfig[icon];
+                          const Icon = cfg.icon;
+                          return (
+                            <span
+                              key={icon}
+                              className={twMerge("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold", cfg.bg, cfg.text)}
+                            >
+                              <Icon size={12} />
+                              {cfg.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   <ChevronDown
                     className={twMerge("self-center text-reef transition", isOpen && "rotate-180")}
@@ -311,6 +370,17 @@ function ItineraryContent() {
                     animate={{ height: "auto", opacity: 1 }}
                     className="border-t border-reef/10 px-5 pb-5"
                   >
+                    {/* Early start warning banner */}
+                    {day.earlyStart && (
+                      <div className="mt-5 flex items-start gap-3 rounded-2xl bg-sunrise/20 px-4 py-3">
+                        <Sunrise size={18} className="mt-0.5 shrink-0 text-hibiscus" />
+                        <div>
+                          <p className="text-sm font-bold text-hibiscus">Early Start Required</p>
+                          <p className="mt-0.5 text-sm text-ink/70">{day.wakeUp}</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid gap-5 pt-5 lg:grid-cols-[1.15fr_0.85fr]">
                       <div className="grid gap-3">
                         {day.schedule.map((item) => (
@@ -323,17 +393,53 @@ function ItineraryContent() {
                           </div>
                         ))}
                       </div>
-                      <div className="rounded-3xl bg-lagoon/10 p-5">
-                        <div className="grid gap-3 text-sm text-ink/75">
-                          <p><strong className="text-ink">Wake-up:</strong> {day.wakeUp}</p>
-                          <p><strong className="text-ink">Trail:</strong> {day.trail}</p>
-                          <p><strong className="text-ink">Beach:</strong> {day.beach}</p>
-                          <p><strong className="text-ink">Food:</strong> {day.food.join(", ")}</p>
-                          <p><strong className="text-ink">Optional:</strong> {day.optional.join(", ")}</p>
-                          <p><strong className="text-ink">Drive:</strong> {day.driveTime}</p>
-                          <p><strong className="text-ink">Parking:</strong> {day.parking}</p>
-                          <p><strong className="text-ink">Crowds:</strong> {day.crowdTip}</p>
+                      <div className="grid gap-3">
+                        <div className="rounded-3xl bg-lagoon/10 p-5">
+                          <div className="grid gap-3 text-sm text-ink/75">
+                            {!day.earlyStart && (
+                              <p><strong className="text-ink">Wake-up:</strong> {day.wakeUp}</p>
+                            )}
+                            <p><strong className="text-ink">Trail:</strong> {day.trail}</p>
+                            <p><strong className="text-ink">Beach:</strong> {day.beach}</p>
+                            <p><strong className="text-ink">Food:</strong> {day.food.join(", ")}</p>
+                            <p><strong className="text-ink">Optional:</strong> {day.optional.join(", ")}</p>
+                            <p><strong className="text-ink">Drive:</strong> {day.driveTime}</p>
+                            <p><strong className="text-ink">Parking:</strong> {day.parking}</p>
+                            <p><strong className="text-ink">Crowds:</strong> {day.crowdTip}</p>
+                          </div>
                         </div>
+
+                        {/* Enhanced conditions panel */}
+                        {(day.weatherNote || day.bestLightingWindow || day.tradeWindFriendly !== undefined) && (
+                          <div className="rounded-3xl bg-sky-50 p-5">
+                            <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-sky-600">
+                              Conditions &amp; Timing
+                            </p>
+                            <div className="grid gap-2.5 text-sm text-ink/75">
+                              {day.weatherNote && (
+                                <div className="flex items-start gap-2">
+                                  <Sun size={14} className="mt-0.5 shrink-0 text-hibiscus" />
+                                  <span>{day.weatherNote}</span>
+                                </div>
+                              )}
+                              {day.bestLightingWindow && (
+                                <div className="flex items-start gap-2">
+                                  <Camera size={14} className="mt-0.5 shrink-0 text-reef" />
+                                  <span><strong className="text-ink">Best light:</strong> {day.bestLightingWindow}</span>
+                                </div>
+                              )}
+                              {day.tradeWindFriendly !== undefined && (
+                                <div className="flex items-start gap-2">
+                                  <Wind size={14} className="mt-0.5 shrink-0 text-sky-500" />
+                                  <span>
+                                    <strong className="text-ink">Trade winds:</strong>{" "}
+                                    {day.tradeWindFriendly ? "Trade wind friendly — expect cooling breezes." : "Leeward / sheltered — less wind, warmer."}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     {day.id === "wed-flex" && (

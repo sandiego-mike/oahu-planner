@@ -186,6 +186,8 @@ export type GolfCourse = {
   pricingUpdated: string;
 };
 
+export type ActivityIcon = "hike" | "beach" | "market" | "scenic" | "sunrise" | "parking-caution";
+
 export type ItineraryDay = {
   id: string;
   date: string;
@@ -206,4 +208,12 @@ export type ItineraryDay = {
   optional: string[];
   tags: string[];
   schedule: { time: string; plan: string }[];
+  // Enhanced UX fields
+  weatherNote?: string;
+  bestLightingWindow?: string;
+  tradeWindFriendly?: boolean;
+  earlyStart?: boolean;
+  parkingDifficulty?: "Easy" | "Moderate" | "Hard";
+  crowdLevel?: "Low" | "Medium" | "High";
+  activityIcons?: ActivityIcon[];
 };

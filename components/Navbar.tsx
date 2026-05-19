@@ -8,6 +8,7 @@ import { Palmtree, Moon, Sun, Menu, X } from "lucide-react";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/itinerary", label: "Itinerary" },
+  { href: "/meal-planning", label: "Meals" },
   { href: "/map", label: "Map" },
   { href: "/beaches", label: "Beaches" },
   { href: "/trails", label: "Trails" },
